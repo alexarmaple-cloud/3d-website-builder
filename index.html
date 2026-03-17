@@ -1,34 +1,1342 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>3D Next Gen Experience</title>
-    <link rel="stylesheet" href="style.css" />
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;800&display=swap" rel="stylesheet">
-  </head>
-  <body>
-    <canvas id="bg"></canvas>
-    <main>
-      <header>
-        <h1>Next Generation</h1>
-        <p>A beautiful 3D experience built for the modern web.</p>
-        <button class="cta">Discover More</button>
-      </header>
-    </main>
-    
-    <!-- Three.js (ES Module) -->
-    <script type="importmap">
-      {
-        "imports": {
-          "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-          "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-        }
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The People's Coffee — Salt Lake City</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Archivo:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ─── DESIGN TOKENS ─────────────────────────────────────────── */
+    :root {
+      --bg:          #080C16;
+      --bg2:         #0D1220;
+      --accent:      #E8437A;
+      --accent-light:#FF7AAA;
+      --accent-rgb:  232, 67, 122;
+      --navy:        #1A2540;
+      --text:        #FFFFFF;
+      --text-muted:  rgba(255,255,255,0.5);
+      --text-dim:    rgba(255,255,255,0.25);
+      --glass-bg:    rgba(255,255,255,0.03);
+      --glass-border:rgba(255,255,255,0.07);
+      --radius:      20px;
+    }
+
+    /* ─── RESET ─────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: auto; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Archivo', sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    ::selection { background: var(--accent); color: #fff; }
+
+    /* ─── SCROLLBAR ──────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #0a0a12; }
+    ::-webkit-scrollbar-thumb {
+      background: linear-gradient(var(--accent), var(--accent-light));
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      box-shadow: 0 0 8px rgba(var(--accent-rgb),0.6);
+    }
+
+    /* ─── STARSCAPE ──────────────────────────────────────────────── */
+    #starscape {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.55;
+    }
+
+    /* ─── SCROLL PROGRESS ────────────────────────────────────────── */
+    #scrollProgress {
+      position: fixed;
+      top: 0; left: 0;
+      height: 3px;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--accent-light));
+      z-index: 10000;
+      transition: width 0.1s linear;
+      box-shadow: 0 0 8px rgba(var(--accent-rgb), 0.5);
+    }
+
+    /* ─── LOADER ─────────────────────────────────────────────────── */
+    #loader {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      transition: opacity 0.8s ease;
+    }
+    .loader-logo img { width: 180px; opacity: 0.95; margin-bottom: 32px; }
+    .loader-text {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 18px;
+    }
+    .loader-bar-track {
+      width: 200px; height: 2px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .loader-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--accent-light));
+      border-radius: 2px;
+      transition: width 0.2s ease;
+      box-shadow: 0 0 8px rgba(var(--accent-rgb),0.6);
+    }
+
+    /* ─── NAVBAR ─────────────────────────────────────────────────── */
+    #navbar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 1000;
+      padding: 0 24px;
+      transition: all 0.45s cubic-bezier(0.16,1,0.3,1);
+    }
+    .nav-inner {
+      max-width: 100%;
+      margin: 0 auto;
+      padding: 18px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.45s cubic-bezier(0.16,1,0.3,1);
+    }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+    .nav-logo img { height: 28px; }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+    }
+    .nav-links a {
+      color: rgba(255,255,255,0.75);
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 500;
+      letter-spacing: 0.3px;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: #fff; }
+    .nav-cta {
+      background: var(--accent) !important;
+      color: #fff !important;
+      padding: 8px 20px !important;
+      border-radius: 100px !important;
+      font-weight: 600 !important;
+      box-shadow: 0 0 16px rgba(var(--accent-rgb),0.3);
+      transition: box-shadow 0.2s, transform 0.2s !important;
+    }
+    .nav-cta:hover {
+      box-shadow: 0 0 24px rgba(var(--accent-rgb),0.5) !important;
+      transform: translateY(-1px);
+    }
+    #navbar.nav-scrolled .nav-inner {
+      max-width: 860px;
+      background: rgba(8,12,22,0.7);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-radius: 100px;
+      padding: 10px 24px;
+      margin-top: 8px;
+    }
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+    }
+
+    /* ─── HERO ───────────────────────────────────────────────────── */
+    #hero {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      z-index: 1;
+    }
+    .hero-bg { position: absolute; inset: 0; pointer-events: none; }
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(90px);
+      opacity: 0.18;
+    }
+    .orb-1 {
+      width: 600px; height: 600px;
+      background: var(--accent);
+      top: -200px; right: -150px;
+    }
+    .orb-2 {
+      width: 500px; height: 500px;
+      background: #1A2560;
+      bottom: -180px; left: -100px;
+      opacity: 0.35;
+    }
+    .orb-3 {
+      width: 300px; height: 300px;
+      background: var(--accent-light);
+      top: 40%; left: 10%;
+      opacity: 0.08;
+    }
+    .grid-overlay {
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+      background-size: 64px 64px;
+    }
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      padding: 120px 24px 80px;
+      max-width: 800px;
+    }
+    .hero-eyebrow {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 20px;
+      display: block;
+    }
+    .hero-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(2.8rem, 6vw, 5.5rem);
+      font-weight: 700;
+      line-height: 1.08;
+      letter-spacing: -1.5px;
+      margin-bottom: 24px;
+    }
+    .hero-title em {
+      font-style: normal;
+      color: var(--accent);
+    }
+    .hero-subtitle {
+      font-size: clamp(1rem, 2vw, 1.2rem);
+      color: var(--text-muted);
+      max-width: 520px;
+      margin: 0 auto 40px;
+      line-height: 1.7;
+    }
+    .hero-buttons {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 64px;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      padding: 14px 34px;
+      border-radius: 12px;
+      font-weight: 600;
+      text-decoration: none;
+      font-size: 0.95rem;
+      box-shadow: 0 0 24px rgba(var(--accent-rgb),0.35);
+      transition: box-shadow 0.3s, transform 0.3s;
+      display: inline-block;
+    }
+    .btn-primary:hover {
+      box-shadow: 0 0 36px rgba(var(--accent-rgb),0.55);
+      transform: translateY(-2px);
+    }
+    .btn-secondary {
+      background: transparent;
+      color: rgba(255,255,255,0.8);
+      padding: 14px 34px;
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 12px;
+      font-size: 0.95rem;
+      text-decoration: none;
+      transition: border-color 0.3s, background 0.3s;
+      display: inline-block;
+    }
+    .btn-secondary:hover {
+      border-color: rgba(255,255,255,0.4);
+      background: rgba(255,255,255,0.04);
+    }
+    .scroll-hint {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-dim);
+      font-size: 0.75rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .scroll-arrow {
+      width: 1px; height: 48px;
+      background: linear-gradient(to bottom, var(--accent), transparent);
+      animation: bounce 1.8s ease-in-out infinite;
+    }
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); opacity: 1; }
+      50% { transform: translateY(10px); opacity: 0.4; }
+    }
+
+    /* ─── SCROLL ANIMATION SECTION ──────────────────────────────── */
+    .scroll-animation {
+      height: 370vh;
+      position: relative;
+      z-index: 1;
+    }
+    .scroll-sticky {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      width: 100%;
+      overflow: hidden;
+      background: var(--bg);
+    }
+    #frameCanvas {
+      position: absolute;
+      top: 0; left: 0;
+      display: block;
+    }
+
+    /* ─── ANNOTATION CARDS ───────────────────────────────────────── */
+    .annotation-card {
+      position: absolute;
+      bottom: 9vh;
+      left: 5vw;
+      max-width: 340px;
+      background: rgba(8, 12, 22, 0.75);
+      border: 1px solid rgba(232, 67, 122, 0.18);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-radius: var(--radius);
+      padding: 26px 28px;
+      opacity: 0;
+      transform: translateY(22px);
+      transition: opacity 0.45s ease, transform 0.45s ease;
+      pointer-events: none;
+      z-index: 10;
+    }
+    .annotation-card.visible {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+    .card-number {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem;
+      letter-spacing: 3px;
+      color: var(--accent);
+      margin-bottom: 10px;
+      text-transform: uppercase;
+    }
+    .card-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.15rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #fff;
+    }
+    .card-desc {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 18px;
+    }
+    .card-stat { display: flex; flex-direction: column; }
+    .card-stat-number {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--accent);
+      line-height: 1;
+    }
+    .card-stat-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+      margin-top: 4px;
+    }
+    @media (max-width: 768px) {
+      .annotation-card {
+        bottom: 2vh;
+        left: 3vw; right: 3vw;
+        max-width: none;
+        padding: 12px 16px;
+        flex-direction: row;
+        align-items: center;
+        gap: 12px;
+        display: flex;
       }
-    </script>
-    <script type="module" src="main.js"></script>
-  </body>
+      .card-desc, .card-stat { display: none; }
+      .card-number { margin-bottom: 0; }
+    }
+    @media (max-width: 1024px) {
+      .scroll-animation { height: 310vh; }
+    }
+    @media (max-width: 768px) {
+      .scroll-animation { height: 260vh; }
+    }
+
+    /* ─── SECTION SHARED ─────────────────────────────────────────── */
+    .section-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 14px;
+      display: block;
+    }
+    .section-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 16px;
+    }
+    .section-sub {
+      color: var(--text-muted);
+      font-size: 1rem;
+      max-width: 540px;
+      line-height: 1.7;
+    }
+
+    /* ─── MENU STRIP ─────────────────────────────────────────────── */
+    #menu-strip {
+      position: relative;
+      z-index: 1;
+      background: var(--bg2);
+      border-top: 1px solid var(--glass-border);
+      border-bottom: 1px solid var(--glass-border);
+      overflow: hidden;
+      padding: 16px 0;
+    }
+    .menu-marquee {
+      display: flex;
+      gap: 0;
+      white-space: nowrap;
+      animation: marquee 28s linear infinite;
+    }
+    .menu-marquee-inner {
+      display: flex;
+      gap: 0;
+      flex-shrink: 0;
+    }
+    .menu-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 28px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+    .menu-item .dot {
+      width: 4px; height: 4px;
+      background: var(--accent);
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    @keyframes marquee {
+      0%   { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
+    /* ─── SPECS ──────────────────────────────────────────────────── */
+    #specs {
+      position: relative;
+      z-index: 1;
+      padding: 100px 32px;
+      text-align: center;
+    }
+    .specs-header {
+      margin-bottom: 70px;
+    }
+    .specs-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 40px;
+      max-width: 960px;
+      margin: 0 auto;
+    }
+    .spec-item {
+      position: relative;
+      padding: 32px 16px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius);
+      backdrop-filter: blur(12px);
+    }
+    .spec-item::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 50%;
+      transform: translateX(-50%);
+      width: 40%; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      border-radius: 2px;
+    }
+    .spec-number {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 3rem;
+      font-weight: 700;
+      display: block;
+      line-height: 1;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #fff 40%, var(--accent-light));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      transition: text-shadow 0.3s;
+    }
+    .spec-number.counting {
+      filter: drop-shadow(0 0 12px rgba(var(--accent-rgb),0.5));
+    }
+    .spec-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    @media (max-width: 768px) {
+      .specs-grid { grid-template-columns: repeat(2,1fr); gap: 20px; }
+      .spec-number { font-size: 2.2rem; }
+    }
+
+    /* ─── FEATURES ───────────────────────────────────────────────── */
+    #features {
+      position: relative;
+      z-index: 1;
+      padding: 80px 32px 100px;
+    }
+    .features-header {
+      text-align: center;
+      margin-bottom: 60px;
+    }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 22px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .feature-card {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(16px);
+      border-radius: var(--radius);
+      padding: 32px;
+      transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    .feature-card:hover {
+      transform: translateY(-5px);
+      border-color: rgba(var(--accent-rgb), 0.25);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+    }
+    .feature-icon {
+      font-size: 1.9rem;
+      margin-bottom: 18px;
+      display: block;
+    }
+    .feature-card h3 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+    .feature-card p {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      line-height: 1.65;
+    }
+    @media (max-width: 900px) {
+      .features-grid { grid-template-columns: repeat(2,1fr); }
+    }
+    @media (max-width: 600px) {
+      .features-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ─── MENU SECTION ───────────────────────────────────────────── */
+    #full-menu {
+      position: relative;
+      z-index: 1;
+      padding: 80px 32px 100px;
+      background: var(--bg2);
+      border-top: 1px solid var(--glass-border);
+      border-bottom: 1px solid var(--glass-border);
+    }
+    .menu-header { text-align: center; margin-bottom: 60px; }
+    .menu-columns {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 28px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .menu-col {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius);
+      padding: 28px;
+    }
+    .menu-col-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 18px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--glass-border);
+    }
+    .menu-col ul { list-style: none; }
+    .menu-col ul li {
+      font-size: 0.9rem;
+      color: rgba(255,255,255,0.75);
+      padding: 7px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .menu-col ul li:last-child { border-bottom: none; }
+    .menu-col ul li::before {
+      content: '·';
+      color: var(--accent);
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .menu-col ul li span {
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      display: block;
+      margin-top: 2px;
+    }
+    @media (max-width: 900px) {
+      .menu-columns { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 600px) {
+      .menu-columns { grid-template-columns: 1fr; }
+    }
+
+    /* ─── CTA ────────────────────────────────────────────────────── */
+    #cta {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      padding: 120px 32px;
+      overflow: hidden;
+    }
+    .cta-orb {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 700px; height: 700px;
+      background: radial-gradient(circle, rgba(var(--accent-rgb),0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .cta-content { position: relative; z-index: 1; max-width: 600px; margin: 0 auto; }
+    .cta-content h2 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(2rem, 4vw, 3.2rem);
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 16px;
+    }
+    .cta-content p {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      line-height: 1.7;
+      margin-bottom: 40px;
+    }
+    .cta-buttons { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+    .btn-large { font-size: 1rem; padding: 16px 44px; border-radius: 14px; }
+    .cta-detail {
+      margin-top: 28px;
+      font-size: 0.82rem;
+      color: var(--text-dim);
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: 1px;
+    }
+
+    /* ─── FOOTER ─────────────────────────────────────────────────── */
+    footer {
+      position: relative;
+      z-index: 1;
+      border-top: 1px solid var(--glass-border);
+      padding: 60px 32px 40px;
+      background: var(--bg2);
+    }
+    .footer-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .footer-top {
+      display: grid;
+      grid-template-columns: 1.5fr 1fr 1fr 1fr;
+      gap: 48px;
+      margin-bottom: 48px;
+    }
+    .footer-brand img { height: 32px; margin-bottom: 16px; }
+    .footer-brand p {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      line-height: 1.7;
+      max-width: 260px;
+    }
+    .footer-col h4 {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 16px;
+    }
+    .footer-col ul { list-style: none; }
+    .footer-col ul li {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      line-height: 1.5;
+    }
+    .footer-col ul li a {
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .footer-col ul li a:hover { color: #fff; }
+    .footer-bottom {
+      border-top: 1px solid var(--glass-border);
+      padding-top: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .footer-copy { font-size: 0.8rem; color: var(--text-dim); }
+    .footer-social { display: flex; gap: 16px; }
+    .footer-social a {
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .footer-social a:hover { color: var(--accent); }
+    @media (max-width: 900px) {
+      .footer-top { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 600px) {
+      .footer-top { grid-template-columns: 1fr; gap: 32px; }
+      .footer-bottom { justify-content: center; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- STARSCAPE -->
+<canvas id="starscape"></canvas>
+
+<!-- SCROLL PROGRESS -->
+<div id="scrollProgress"></div>
+
+<!-- LOADER -->
+<div id="loader">
+  <div class="loader-logo">
+    <img src="logo.png" alt="The People's Coffee" />
+  </div>
+  <p class="loader-text">Loading</p>
+  <div class="loader-bar-track">
+    <div class="loader-bar-fill" id="loaderBar"></div>
+  </div>
+</div>
+
+<!-- NAVBAR -->
+<nav id="navbar">
+  <div class="nav-inner">
+    <a href="#" class="nav-logo">
+      <img src="logo.png" alt="The People's Coffee" />
+    </a>
+    <div class="nav-links">
+      <a href="#features">Experience</a>
+      <a href="#full-menu">Menu</a>
+      <a href="#specs">About</a>
+      <a href="#cta" class="nav-cta">Visit Us</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-bg">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="grid-overlay"></div>
+  </div>
+  <div class="hero-content">
+    <span class="hero-eyebrow">Downtown Salt Lake City</span>
+    <h1 class="hero-title">Coffee with<br /><em>Purpose.</em><br />Flavor with Heart.</h1>
+    <p class="hero-subtitle">
+      Handcrafted beverages, fresh bites, and a community worth belonging to —
+      at the corner of 200 S, Salt Lake City.
+    </p>
+    <div class="hero-buttons">
+      <a href="#cta" class="btn-primary btn-large">Find Us</a>
+      <a href="#features" class="btn-secondary btn-large">Explore the Menu</a>
+    </div>
+    <div class="scroll-hint">
+      <span>Scroll to explore</span>
+      <div class="scroll-arrow"></div>
+    </div>
+  </div>
+</section>
+
+<!-- SCROLL ANIMATION -->
+<section class="scroll-animation">
+  <div class="scroll-sticky">
+    <canvas id="frameCanvas"></canvas>
+
+    <div class="annotation-card" data-show="0.10" data-hide="0.28">
+      <div class="card-number">01 — Drinks</div>
+      <div class="card-body">
+        <h3 class="card-title">Handcrafted Every Time</h3>
+        <p class="card-desc">From pour-over drip to ceremonial matcha — every drink made fresh by our skilled baristas.</p>
+        <div class="card-stat">
+          <span class="card-stat-number">9</span>
+          <span class="card-stat-label">Signature Beverages</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="annotation-card" data-show="0.32" data-hide="0.50">
+      <div class="card-number">02 — Food</div>
+      <div class="card-body">
+        <h3 class="card-title">Fresh Bites Daily</h3>
+        <p class="card-desc">Lox bagels, avocado toast, overnight oats — made with locally sourced ingredients every morning.</p>
+        <div class="card-stat">
+          <span class="card-stat-number">8</span>
+          <span class="card-stat-label">Fresh Food Items</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="annotation-card" data-show="0.54" data-hide="0.72">
+      <div class="card-number">03 — Paninis</div>
+      <div class="card-body">
+        <h3 class="card-title">Artisan Paninis</h3>
+        <p class="card-desc">Turkey avocado, caprese, grilled cheese — pressed hot and made to order throughout the day.</p>
+        <div class="card-stat">
+          <span class="card-stat-number">4</span>
+          <span class="card-stat-label">Crafted Paninis</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="annotation-card" data-show="0.76" data-hide="0.96">
+      <div class="card-number">04 — Community</div>
+      <div class="card-body">
+        <h3 class="card-title">Your Third Place</h3>
+        <p class="card-desc">A cozy, inclusive spot in the heart of SLC to gather, work, or simply unwind over a great cup.</p>
+        <div class="card-stat">
+          <span class="card-stat-number">177</span>
+          <span class="card-stat-label">E 200 S, Salt Lake City</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MENU MARQUEE STRIP -->
+<div id="menu-strip" aria-hidden="true">
+  <div class="menu-marquee">
+    <div class="menu-marquee-inner">
+      <span class="menu-item"><span class="dot"></span>Latte</span>
+      <span class="menu-item"><span class="dot"></span>Cold Brew</span>
+      <span class="menu-item"><span class="dot"></span>Matcha</span>
+      <span class="menu-item"><span class="dot"></span>Chai</span>
+      <span class="menu-item"><span class="dot"></span>Avocado Toast</span>
+      <span class="menu-item"><span class="dot"></span>Lox Bagel</span>
+      <span class="menu-item"><span class="dot"></span>Caprese Panini</span>
+      <span class="menu-item"><span class="dot"></span>Mocha</span>
+      <span class="menu-item"><span class="dot"></span>Overnight Oats</span>
+      <span class="menu-item"><span class="dot"></span>White Mocha</span>
+      <span class="menu-item"><span class="dot"></span>Turkey Avocado</span>
+      <span class="menu-item"><span class="dot"></span>Drip Coffee</span>
+      <span class="menu-item"><span class="dot"></span>Hot Coco</span>
+      <span class="menu-item"><span class="dot"></span>Fruit Bowl</span>
+      <span class="menu-item"><span class="dot"></span>Grilled Cheese</span>
+      <span class="menu-item"><span class="dot"></span>Nutella Toast</span>
+    </div>
+    <div class="menu-marquee-inner" aria-hidden="true">
+      <span class="menu-item"><span class="dot"></span>Latte</span>
+      <span class="menu-item"><span class="dot"></span>Cold Brew</span>
+      <span class="menu-item"><span class="dot"></span>Matcha</span>
+      <span class="menu-item"><span class="dot"></span>Chai</span>
+      <span class="menu-item"><span class="dot"></span>Avocado Toast</span>
+      <span class="menu-item"><span class="dot"></span>Lox Bagel</span>
+      <span class="menu-item"><span class="dot"></span>Caprese Panini</span>
+      <span class="menu-item"><span class="dot"></span>Mocha</span>
+      <span class="menu-item"><span class="dot"></span>Overnight Oats</span>
+      <span class="menu-item"><span class="dot"></span>White Mocha</span>
+      <span class="menu-item"><span class="dot"></span>Turkey Avocado</span>
+      <span class="menu-item"><span class="dot"></span>Drip Coffee</span>
+      <span class="menu-item"><span class="dot"></span>Hot Coco</span>
+      <span class="menu-item"><span class="dot"></span>Fruit Bowl</span>
+      <span class="menu-item"><span class="dot"></span>Grilled Cheese</span>
+      <span class="menu-item"><span class="dot"></span>Nutella Toast</span>
+    </div>
+  </div>
+</div>
+
+<!-- SPECS -->
+<section id="specs">
+  <div class="specs-header">
+    <span class="section-label">By the Numbers</span>
+    <h2 class="section-title">The People's Coffee</h2>
+    <p class="section-sub" style="margin:0 auto;">A local institution in downtown SLC — built around community, quality, and consistency.</p>
+  </div>
+  <div class="specs-grid">
+    <div class="spec-item" data-target="12" data-suffix="">
+      <span class="spec-number">0</span>
+      <span class="spec-label">Hours Open Daily</span>
+    </div>
+    <div class="spec-item" data-target="21" data-suffix="+">
+      <span class="spec-number">0</span>
+      <span class="spec-label">Menu Items</span>
+    </div>
+    <div class="spec-item" data-target="100" data-suffix="%">
+      <span class="spec-number">0</span>
+      <span class="spec-label">Locally Sourced</span>
+    </div>
+    <div class="spec-item" data-target="1" data-suffix="">
+      <span class="spec-number">0</span>
+      <span class="spec-label">Downtown SLC Location</span>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="features-header">
+    <span class="section-label">Why People's Coffee</span>
+    <h2 class="section-title">Where Community Brews</h2>
+    <p class="section-sub" style="margin:0 auto;">At The People's Coffee, great coffee is just the beginning. We built a space worth returning to.</p>
+  </div>
+  <div class="features-grid">
+    <div class="feature-card">
+      <span class="feature-icon">☕</span>
+      <h3>Skillfully Crafted Drinks</h3>
+      <p>Every cup prepared with care and consistency by our trained baristas — from your classic latte to ceremonial matcha.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🥑</span>
+      <h3>Fresh Food, Every Morning</h3>
+      <p>Locally sourced ingredients, house-made spreads, and daily pastries. Whether it's an avocado toast or a lox bagel, we've got your morning covered.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🏙️</span>
+      <h3>Heart of Downtown SLC</h3>
+      <p>Located at 177 E 200 S — steps from everything. Indoors with city views or out on the patio, it's your spot.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🎨</span>
+      <h3>Support Local Creators</h3>
+      <p>We proudly support local artists, musicians, and makers. The People's Coffee is more than a café — it's a platform for the community.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🥪</span>
+      <h3>Artisan Paninis & Toasts</h3>
+      <p>Hot, pressed paninis and loaded toasts made to order. Caprese, Turkey Avocado, Nutella, Veggie — something for every appetite.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🌱</span>
+      <h3>Small-Batch Roasting</h3>
+      <p>We partner with local roasters Caffe Ibis and others to bring you ethically sourced, small-batch beans in every brew.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FULL MENU -->
+<section id="full-menu">
+  <div class="menu-header">
+    <span class="section-label">What We Serve</span>
+    <h2 class="section-title">Our Favorite Drinks &amp; Handcrafted Bites</h2>
+    <p class="section-sub" style="margin:0 auto;">Everything on our menu is made with intention — from the first sip to the last bite.</p>
+  </div>
+  <div class="menu-columns">
+    <div class="menu-col">
+      <div class="menu-col-title">☕ Drinks</div>
+      <ul>
+        <li>Latte</li>
+        <li>Drip Coffee</li>
+        <li>Cold Brew</li>
+        <li>Mocha</li>
+        <li>White Mocha</li>
+        <li>Hot Coco</li>
+        <li>Matcha</li>
+        <li>Chai</li>
+        <li>Tea</li>
+      </ul>
+    </div>
+    <div class="menu-col">
+      <div class="menu-col-title">🥑 Food Menu</div>
+      <ul>
+        <li>Lox Bagel <span>Cream cheese, smoked salmon, pickled red onions, capers</span></li>
+        <li>Breakfast Sandwich <span>Cream cheese, egg, tomato, spinach, pickled red onion</span></li>
+        <li>Avocado Toast <span>Avocado, pickled red onion, sumac seasoning</span></li>
+        <li>Nutella Toast <span>Nutella, banana, almonds, powder sugar</span></li>
+        <li>PB Toast <span>Peanut butter, apples, honey, cinnamon</span></li>
+        <li>Overnight Oats <span>PB, banana, almonds, cinnamon</span></li>
+        <li>Bagel &amp; Cream Cheese <span>Everything, Asiago, or Jalapeño Cheddar</span></li>
+        <li>Fruit Bowl <span>Greek yogurt, banana, strawberry, blueberry, granola, honey</span></li>
+      </ul>
+    </div>
+    <div class="menu-col">
+      <div class="menu-col-title">🥪 Paninis</div>
+      <ul>
+        <li>Turkey Avocado <span>Turkey, avocado, pickled red onion, provolone, house sauce, tomato</span></li>
+        <li>Caprese <span>House sauce, pesto, mozzarella, tomato, basil, balsamic glaze</span></li>
+        <li>Veggie <span>House sauce, hummus, provolone, pickled red onion, tomato, spinach, bell pepper, avocado</span></li>
+        <li>Grilled Cheese <span>Provolone, American cheese, salt, pepper</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section id="cta">
+  <div class="cta-orb"></div>
+  <div class="cta-content">
+    <span class="section-label">Come Visit</span>
+    <h2>Come for the Coffee.<br />Stay for the Community.</h2>
+    <p>We're open seven days a week in the heart of Salt Lake City. Stop in for a quick coffee or settle in for the morning — either way, you're welcome here.</p>
+    <div class="cta-buttons">
+      <a href="https://maps.google.com/?q=177+E+200+S,+Salt+Lake+City" target="_blank" class="btn-primary btn-large">Get Directions</a>
+      <a href="https://www.instagram.com/thepeoplescoffeeutah/" target="_blank" class="btn-secondary btn-large">Follow on Instagram</a>
+    </div>
+    <p class="cta-detail">Mon–Fri 7:00am – 7:00pm &nbsp;·&nbsp; Sat–Sun 8:00am – 7:00pm</p>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <img src="logo.png" alt="The People's Coffee" />
+        <p>The best spot in downtown Salt Lake for great coffee, fresh bites, and real community. Bringing people together, one cup at a time.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Hours</h4>
+        <ul>
+          <li>Mon – Fri</li>
+          <li>7:00am – 7:00pm</li>
+          <li style="margin-top:8px;">Sat – Sun</li>
+          <li>8:00am – 7:00pm</li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Menu</h4>
+        <ul>
+          <li>Drinks</li>
+          <li>Food</li>
+          <li>Paninis</li>
+          <li>Events &amp; Catering</li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Find Us</h4>
+        <ul>
+          <li><a href="https://maps.google.com/?q=177+E+200+S,+Salt+Lake+City" target="_blank">177 E 200 S, Salt Lake City, UT 84111</a></li>
+          <li><a href="tel:8014104734">(801) 410-4734</a></li>
+          <li><a href="mailto:contact@peoplescoffeeco.com">contact@peoplescoffeeco.com</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p class="footer-copy">&copy; 2026 The People's Coffee. All rights reserved.</p>
+      <div class="footer-social">
+        <a href="https://www.instagram.com/thepeoplescoffeeutah/" target="_blank">Instagram</a>
+        <a href="https://peoplescoffeeco.com" target="_blank">Website</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- ─── JAVASCRIPT ──────────────────────────────────────────────────────── -->
+<script>
+(function () {
+  'use strict';
+
+  /* ── STARSCAPE ─────────────────────────────────────────────────── */
+  const starCanvas = document.getElementById('starscape');
+  const sCtx = starCanvas.getContext('2d');
+  let stars = [];
+
+  function initStars() {
+    const dpr = window.devicePixelRatio || 1;
+    starCanvas.width  = window.innerWidth  * dpr;
+    starCanvas.height = window.innerHeight * dpr;
+    sCtx.scale(dpr, dpr);
+    stars = Array.from({ length: 180 }, () => ({
+      x: Math.random() * window.innerWidth,
+      y: Math.random() * window.innerHeight,
+      radius: Math.random() * 1.2 + 0.3,
+      baseOpacity: Math.random() * 0.6 + 0.2,
+      driftX: (Math.random() - 0.5) * 0.025,
+      driftY: (Math.random() - 0.5) * 0.012,
+      twinkleSpeed: Math.random() * 0.0012 + 0.0004,
+      twinklePhase: Math.random() * Math.PI * 2,
+    }));
+  }
+
+  function animateStars() {
+    sCtx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+    const now = Date.now();
+    stars.forEach(s => {
+      s.x += s.driftX;
+      s.y += s.driftY;
+      if (s.x < 0) s.x = window.innerWidth;
+      if (s.x > window.innerWidth) s.x = 0;
+      if (s.y < 0) s.y = window.innerHeight;
+      if (s.y > window.innerHeight) s.y = 0;
+      const twinkle = Math.sin(now * s.twinkleSpeed + s.twinklePhase);
+      const opacity = Math.max(0, s.baseOpacity + twinkle * 0.3);
+      sCtx.beginPath();
+      sCtx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
+      sCtx.fillStyle = `rgba(255,255,255,${opacity})`;
+      sCtx.fill();
+    });
+    requestAnimationFrame(animateStars);
+  }
+
+  initStars();
+  animateStars();
+  window.addEventListener('resize', initStars, { passive: true });
+
+  /* ── FRAME CANVAS ──────────────────────────────────────────────── */
+  const canvas = document.getElementById('frameCanvas');
+  const ctx    = canvas.getContext('2d');
+  const FRAME_COUNT = 121;
+  const frames = [];
+  let loadedCount = 0;
+  let currentFrame = -1;
+  let ticking = false;
+
+  const loaderBar  = document.getElementById('loaderBar');
+  const loader     = document.getElementById('loader');
+
+  function resizeCanvas() {
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width  = window.innerWidth  * dpr;
+    canvas.height = window.innerHeight * dpr;
+    canvas.style.width  = window.innerWidth  + 'px';
+    canvas.style.height = window.innerHeight + 'px';
+    if (currentFrame >= 0) drawFrame(currentFrame);
+  }
+
+  function drawFrame(index) {
+    const img = frames[index];
+    if (!img || !img.complete) return;
+    const dpr = window.devicePixelRatio || 1;
+    const cw = canvas.width;
+    const ch = canvas.height;
+    ctx.clearRect(0, 0, cw, ch);
+
+    const imgRatio    = img.naturalWidth / img.naturalHeight;
+    const canvasRatio = cw / ch;
+    let drawW, drawH, drawX, drawY;
+
+    if (window.innerWidth > 768) {
+      if (canvasRatio > imgRatio) {
+        drawW = cw; drawH = cw / imgRatio;
+      } else {
+        drawH = ch; drawW = ch * imgRatio;
+      }
+    } else {
+      const zoom = 1.25;
+      if (canvasRatio > imgRatio) {
+        drawH = ch * zoom; drawW = drawH * imgRatio;
+      } else {
+        drawW = cw * zoom; drawH = drawW / imgRatio;
+      }
+    }
+    drawX = (cw - drawW) / 2;
+    drawY = (ch - drawH) / 2;
+    ctx.drawImage(img, drawX, drawY, drawW, drawH);
+  }
+
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas, { passive: true });
+
+  /* ── FRAME PRELOAD ─────────────────────────────────────────────── */
+  function onAllFramesLoaded() {
+    loader.style.opacity = '0';
+    loader.style.transition = 'opacity 0.8s ease';
+    setTimeout(() => { loader.style.display = 'none'; }, 800);
+    drawFrame(0);
+  }
+
+  for (let i = 1; i <= FRAME_COUNT; i++) {
+    const img = new Image();
+    const pad = String(i).padStart(4, '0');
+    img.src = `frames/frame_${pad}.jpg`;
+    img.onload = () => {
+      loadedCount++;
+      loaderBar.style.width = (loadedCount / FRAME_COUNT * 100) + '%';
+      if (loadedCount === FRAME_COUNT) onAllFramesLoaded();
+    };
+    img.onerror = () => {
+      loadedCount++;
+      if (loadedCount === FRAME_COUNT) onAllFramesLoaded();
+    };
+    frames.push(img);
+  }
+
+  /* ── ANNOTATION CARDS + SNAP-STOP ─────────────────────────────── */
+  const cards     = document.querySelectorAll('.annotation-card');
+  const snapZones = [];
+  const HOLD_MS   = 580;
+  let isSnapping  = false;
+
+  cards.forEach(card => {
+    snapZones.push({
+      show: parseFloat(card.dataset.show),
+      hide: parseFloat(card.dataset.hide),
+      snapped: false,
+    });
+  });
+
+  function updateCards(progress) {
+    cards.forEach((card, i) => {
+      const z = snapZones[i];
+      const visible = progress >= z.show && progress <= z.hide;
+      card.classList.toggle('visible', visible);
+      if (visible && !z.snapped && !isSnapping) {
+        z.snapped  = true;
+        isSnapping = true;
+        document.body.style.overflow = 'hidden';
+        setTimeout(() => {
+          document.body.style.overflow = '';
+          isSnapping = false;
+        }, HOLD_MS);
+      }
+      if (!visible) z.snapped = false;
+    });
+  }
+
+  /* ── SCROLL HANDLER ────────────────────────────────────────────── */
+  const scrollSection = document.querySelector('.scroll-animation');
+  const scrollProgress = document.getElementById('scrollProgress');
+  const navbar = document.getElementById('navbar');
+
+  window.addEventListener('scroll', () => {
+    if (!ticking) {
+      requestAnimationFrame(() => {
+        const scrollY = window.scrollY;
+        const docH    = document.body.scrollHeight - window.innerHeight;
+
+        // scroll progress bar
+        scrollProgress.style.width = (scrollY / docH * 100) + '%';
+
+        // navbar pill
+        navbar.classList.toggle('nav-scrolled', scrollY > 80);
+
+        // frame animation
+        const rect          = scrollSection.getBoundingClientRect();
+        const scrollable    = scrollSection.offsetHeight - window.innerHeight;
+        const progress      = Math.min(1, Math.max(0, -rect.top / scrollable));
+        const frameIndex    = Math.min(FRAME_COUNT - 1, Math.floor(progress * FRAME_COUNT));
+
+        if (frameIndex !== currentFrame) {
+          currentFrame = frameIndex;
+          drawFrame(frameIndex);
+        }
+
+        updateCards(progress);
+        ticking = false;
+      });
+      ticking = true;
+    }
+  }, { passive: true });
+
+  /* ── COUNT-UP SPECS ────────────────────────────────────────────── */
+  function easeOutExpo(t) {
+    return t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
+  }
+
+  function countUp(el, target, suffix, duration = 2000) {
+    const start = performance.now();
+    el.classList.add('counting');
+    function update(now) {
+      const t       = Math.min((now - start) / duration, 1);
+      const eased   = easeOutExpo(t);
+      const current = eased * target;
+      el.textContent = (target % 1 === 0 ? Math.floor(current) : current.toFixed(1)) + suffix;
+      if (t < 1) {
+        requestAnimationFrame(update);
+      } else {
+        el.textContent = target + suffix;
+        el.classList.remove('counting');
+      }
+    }
+    requestAnimationFrame(update);
+  }
+
+  const specObserver = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.querySelectorAll('.spec-item').forEach((item, i) => {
+          setTimeout(() => {
+            const numEl  = item.querySelector('.spec-number');
+            const target = parseFloat(item.dataset.target);
+            const suffix = item.dataset.suffix || '';
+            countUp(numEl, target, suffix);
+          }, i * 220);
+        });
+        specObserver.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.25 });
+
+  const specsGrid = document.querySelector('.specs-grid');
+  if (specsGrid) specObserver.observe(specsGrid);
+
+})();
+</script>
+</body>
 </html>
